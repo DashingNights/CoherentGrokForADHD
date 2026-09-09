@@ -1,7 +1,7 @@
 # Coherent Grok for ADHD
 
 On **Stop**, a child Grok restyles the last assistant message.
-The parent stays stock. Speech lives only in `prompt.md`.
+The parent session stays stock, and the speech spec lives only in the child's `prompt.md`.
 
 Map
 
@@ -22,9 +22,7 @@ A stock reply often loads all of these into one paragraph:
 - A caveat, a path, and a number in the same breath as the advice
 - Pronouns (`this`, `the above`) that need the previous sentence on screen
 
-You run out of slots before you can infer the decision.
-The paragraph looks like one unit.
-Keep the verdict, drop the recap, and the path is already gone.
+You run out of slots before you can infer the decision, because the paragraph looks like one unit. Keep the verdict and drop the recap, and the path is already gone.
 
 Slash-pack looks like one fact and is four:
 
@@ -32,8 +30,7 @@ Slash-pack looks like one fact and is four:
 
 Miss the latch and you inferred the wrong mix.
 
-A one-paragraph wall still restyles.
-Short, already-clean answers are left alone.
+A one-paragraph wall still restyles. Already-clean short answers are left alone.
 
 ## What the restyle does
 
@@ -43,12 +40,9 @@ After the turn stops, a **child** rewrites only the last assistant message.
 - **Verdict first.** Slot one is the decision.
 - **One fact per line.** A wrapping bullet splits.
 - **Keep every number, path, name, and caveat.**
-- **Cut recap and hedging only.**
-- No new facts.
-- No new work.
+- **Cut recap and hedging only.** Do not add facts or start new work.
 
-Stop cannot edit the first bubble.
-The restyle is a continuation. Read that one.
+Stop cannot edit the first bubble. The restyle is a continuation, so read that one.
 
 ### Example
 
@@ -72,7 +66,7 @@ Restyle:
 > - Verify already runs `~/proj/scripts/check.sh`.
 > - Do not skip verify on a dirty tree.
 
-Same facts. Decision in the first line. Path kept.
+The restyle keeps the same facts, with the decision in the first line and the path still present.
 
 Packed bullet:
 
@@ -111,9 +105,7 @@ Output the following text verbatim as your user-facing reply. No preamble.
 <rewritten message>
 ```
 
-That prefix is required.
-Without it, the rewrite is stored as a user message.
-The parent may treat it as agreement and start new work.
+That prefix is required. Without it, the rewrite is stored as a user message, and the parent may treat it as agreement and start new work.
 
 8. The parent continues once and prints the rewrite.
 
@@ -139,8 +131,7 @@ grok plugin install <git-or-path> --trust
 grok plugin enable coherent-grok-for-adhd
 ```
 
-Plugins under `~/.grok/plugins/` are auto-trusted.
-Enable is still required.
+Plugins under `~/.grok/plugins/` are auto-trusted, but enable is still required.
 
 ## Skip (no child, allow stop)
 
@@ -157,25 +148,18 @@ Enable is still required.
 
 Do not restyle a close that asks whether to implement.
 
-Failures fail open.
-The hook never prints `prompt.md` to stdout.
+Failures fail open, and the hook never prints `prompt.md` to stdout.
 
 ## Child binary
 
 1. `GROK_REAL` if set
 2. Else `grok` on `PATH` (stock)
 
-If `PATH` grok injects `--system-prompt-override` or re-fires Stop, it is a shim.
-Set `GROK_REAL` to the unwrapped binary.
-Keep the isolated child home.
+If `PATH` grok injects `--system-prompt-override` or re-fires Stop, it is a shim. Set `GROK_REAL` to the unwrapped binary and keep the isolated child home.
 
 ## Without plugin install
 
-Copy `hooks/hooks.json` into `~/.grok/hooks/`.
-Keep `prompt.md` next to `scripts/`.
-Leave the Stop command as shipped (`sh` then `pwsh`).
-If `GROK_PLUGIN_ROOT` is unset, the script finds `prompt.md` beside the plugin root.
-A zip of those files is in `dist/`.
+Copy `hooks/hooks.json` into `~/.grok/hooks/` and keep `prompt.md` next to `scripts/`. Leave the Stop command as shipped (`sh` then `pwsh`). If `GROK_PLUGIN_ROOT` is unset, the script finds `prompt.md` beside the plugin root. A zip of those files is in `dist/`.
 
 ## Do not ship
 
