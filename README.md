@@ -6,40 +6,40 @@ The parent session stays stock, and the speech spec lives only in the child's `p
 Map
 
 - Must: install, what you see, skip rules
-- Why: few working-memory slots
+- Why: you can only hold a few things in mind at once
 - Skip: child flags, manual zip, what we do not ship
 
 ## Why stock output is hard
 
-ADHD working memory holds a few items at once.
+ADHD working memory is small. You can only hold a few things in mind at once.
 
-A stock reply often loads all of these into one paragraph:
+A stock reply often dumps all of these into one paragraph:
 
 - Recap of the question you just typed
 - Hedges: `you might want to`, `it's worth noting`, `great question`
-- Verdict buried in the middle or the last sentence
+- The actual answer, buried in the middle or the last sentence
 - Three facts glued with slashes and colons
-- A caveat, a path, and a number in the same breath as the advice
-- Pronouns (`this`, `the above`) that need the previous sentence on screen
+- A warning, a path, and a number in the same breath as the advice
+- Words like `this` or `the above` that only make sense if the last sentence is still on screen
 
-You run out of slots before you can infer the decision, because the paragraph looks like one unit. Keep the verdict and drop the recap, and the path is already gone.
+The paragraph looks like one lump. By the time you have the answer, the path is gone, and a reread still leaves you unsure what to do.
 
-Slash-pack looks like one fact and is four:
+Gluing with slashes looks like one step and is four:
 
-`85% index / 15% satellite / cash when the latch fires`
+`Install Node 20 / run npm ci / run npm test / skip the production build on PRs`
 
-Miss the latch and you inferred the wrong mix.
+Miss “skip the production build” and you ship a full build on every PR.
 
-A one-paragraph wall still restyles. Already-clean short answers are left alone.
+A long one-paragraph answer still restyles. Short answers that are already easy to scan are left alone.
 
 ## What the restyle does
 
 The parent still thinks, tools, and prompts as stock Grok.
 After the turn stops, a **child** rewrites only the last assistant message.
 
-- **Verdict first.** Slot one is the decision.
-- **One fact per line.** A wrapping bullet splits.
-- **Keep every number, path, name, and caveat.**
+- **Answer first.** The first line is what to do.
+- **One fact per line.** If a bullet wraps, split it.
+- **Keep every number, path, name, and warning.**
 - **Cut recap and hedging only.** Do not add facts or start new work.
 
 Stop cannot edit the first bubble. The restyle is a continuation, so read that one.
@@ -54,7 +54,7 @@ Restyle:
 
 > Protect two hours of attention a day and output can double.
 >
-> Attention is the scarce resource.
+> Attention is what runs out.
 >
 > Do
 >
@@ -64,21 +64,22 @@ Restyle:
 > Keep
 >
 > - Verify already runs `~/proj/scripts/check.sh`.
-> - Do not skip verify on a dirty tree.
+> - Do not skip verify if tests failed.
 
-The restyle keeps the same facts, with the decision in the first line and the path still present.
+The restyle keeps the same facts. The first line is the answer, and the path is still there.
 
 Packed bullet:
 
-> Mix: 85% index / 15% monthly skip-1m satellite (n=10, keep=20) / cash only when the latch fires.
+> Setup: Node 20 / `npm ci` / `npm test` / skip the production build on PRs.
 
 Restyle:
 
-> Mix
+> Setup
 >
-> - Index 85%. Never sell except the latch.
-> - Satellite 15%. 10 names. Keep 20. Monthly. Skip 1m.
-> - Cash only when the latch fires.
+> - Node 20.
+> - `npm ci`.
+> - `npm test`.
+> - Skip the production build on PRs.
 
 ## How it works
 
