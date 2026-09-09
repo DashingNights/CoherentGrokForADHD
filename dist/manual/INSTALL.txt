@@ -1,0 +1,14 @@
+Stop restyle — copy these files, no plugin install.
+
+1. Copy this folder to %USERPROFILE%\.grok\stop-restyle  (or ~/.grok/stop-restyle).
+   Keep prompt.md next to scripts/.
+
+2. Copy hooks.json to %USERPROFILE%\.grok\hooks\stop-restyle.json  (or ~/.grok/hooks/).
+
+The Stop command uses GROK_HOME/stop-restyle/scripts/….
+
+The script finds prompt.md beside this folder if GROK_PLUGIN_ROOT is unset.
+Child binary is GROK_REAL if set, else grok on PATH.
+
+If PATH grok is a shim that injects --system-prompt-override or re-fires Stop,
+set GROK_REAL to the unwrapped binary and keep the isolated child home.

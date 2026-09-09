@@ -1,0 +1,264 @@
+#!/bin/sh
+# Stop hook: restyle lastAssistantMessage in a child Grok process.
+# Fail open. Never print prompt.md (the restyle spec) to stdout.
+#
+# Child binary: GROK_REAL if set, else PATH grok (stock).
+# If PATH grok is a shim that injects --system-prompt-override or re-fires Stop,
+# set GROK_REAL to the unwrapped binary and keep the isolated child home.
+#
+# pwsh if present (same JSON contract as stop-restyle.ps1), else this POSIX path.
+
+set -eu
+
+DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+if command -v pwsh >/dev/null 2>&1; then
+  exec pwsh -NoProfile -ExecutionPolicy Bypass -File "$DIR/stop-restyle.ps1"
+fi
+
+allow_stop() {
+  exit 0
+}
+
+if [ -n "${GROK_RESTYLE_CHILD:-}" ]; then
+  allow_stop
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "restyle fail-open: python3 not found (install pwsh or python3)" >&2
+  allow_stop
+fi
+
+export STOP_RESTYLE_DIR="$DIR"
+exec python3 - "$DIR" <<'PY'
+import json, os, re, sys, tempfile, time, shutil, subprocess
+from pathlib import Path
+
+MIN_SOURCE = 80
+MAX_SOURCE = 9000
+MAX_CONTEXT = 9800
+CHILD_TIMEOUT = 40
+VERBATIM = "Output the following text verbatim as your user-facing reply. No preamble."
+DIR = Path(sys.argv[1]).resolve()
+
+
+def allow():
+    sys.exit(0)
+
+
+def plugin_root():
+    env = os.environ.get("GROK_PLUGIN_ROOT", "").strip()
+    if env:
+        return Path(env)
+    if (DIR.parent / "prompt.md").is_file():
+        return DIR.parent
+    if (DIR / "prompt.md").is_file():
+        return DIR
+    return DIR.parent
+
+
+def data_dir():
+    env = os.environ.get("GROK_PLUGIN_DATA", "").strip()
+    if env:
+        return Path(env)
+    return Path(tempfile.gettempdir()) / "grok-stop-restyle"
+
+
+def parent_grok_home():
+    env = os.environ.get("GROK_HOME", "").strip()
+    if env:
+        return Path(env)
+    home = os.environ.get("HOME") or os.environ.get("USERPROFILE")
+    if home:
+        return Path(home) / ".grok"
+    return None
+
+
+def grok_binary():
+    real = os.environ.get("GROK_REAL", "").strip()
+    if real:
+        return real
+    return shutil.which("grok")
+
+
+def same_path(a, b):
+    if not a:
+        return False
+    try:
+        return Path(a).resolve() == b.resolve()
+    except Exception:
+        return os.path.normcase(os.path.normpath(a.rstrip("/\\"))) == os.path.normcase(
+            os.path.normpath(str(b))
+        )
+
+
+def already_simple(s: str) -> bool:
+    if len(s) < 600:
+        return True
+    lines = [ln for ln in s.splitlines() if ln.strip()]
+    if len(lines) < 3:
+        return False
+    short = sum(1 for ln in lines if len(ln.strip()) <= 90)
+    return (short / len(lines)) >= 0.7 and len(s) <= 2500
+
+
+child_home = data_dir() / "home"
+if same_path(os.getcwd(), child_home):
+    allow()
+
+raw = sys.stdin.read()
+if not raw.strip():
+    allow()
+try:
+    ev = json.loads(raw)
+except Exception:
+    allow()
+
+if ev.get("subagentType"):
+    allow()
+if ev.get("stopHookActive") is True:
+    allow()
+if same_path(str(ev.get("cwd") or ""), child_home):
+    allow()
+
+lock = data_dir() / ".in-flight"
+if lock.is_file():
+    age = time.time() - lock.stat().st_mtime
+    if age < 120:
+        allow()
+    try:
+        lock.unlink()
+    except OSError:
+        pass
+
+reason = ev.get("reason")
+if reason and reason != "end_turn":
+    allow()
+
+source = ev.get("lastAssistantMessage") or ""
+if not isinstance(source, str) or not source.strip():
+    allow()
+if len(source) < MIN_SOURCE or len(source) > MAX_SOURCE:
+    allow()
+if already_simple(source):
+    allow()
+tail = source[-800:]
+if re.search(r"(?is)(want me to|shall I|should I|need from you).{0,240}\?", tail):
+    allow()
+
+root = plugin_root()
+prompt_path = root / "prompt.md"
+if not prompt_path.is_file():
+    alt = DIR / "prompt.md"
+    if alt.is_file():
+        prompt_path = alt
+    else:
+        allow()
+
+real = grok_binary()
+if not real or not Path(real).exists():
+    allow()
+
+child_home.mkdir(parents=True, exist_ok=True)
+parent = parent_grok_home()
+if parent:
+    auth = parent / "auth.json"
+    if auth.is_file():
+        shutil.copy2(auth, child_home / "auth.json")
+
+spec = prompt_path.read_text(encoding="utf-8")
+if not spec.strip():
+    allow()
+
+user_prompt = (
+    "Rewrite the assistant message in <source>.\n"
+    "Keep every number, path, name, and caveat. Shorten only recap and hedging.\n"
+    "Verdict first. One fact per line. Return only the rewritten message.\n\n"
+    f"<source>\n{source}\n</source>\n"
+)
+fd, prompt_file = tempfile.mkstemp(prefix="grok-restyle-in-", suffix=".txt")
+os.close(fd)
+Path(prompt_file).write_text(user_prompt, encoding="utf-8")
+
+env = os.environ.copy()
+env["GROK_HOME"] = str(child_home)
+env["GROK_MEMORY"] = "0"
+env["GROK_RESTYLE_CHILD"] = "1"
+
+args = [
+    real,
+    "--prompt-file",
+    prompt_file,
+    "--system-prompt-override",
+    spec,
+    "--effort",
+    "low",
+    "--max-turns",
+    "1",
+    "--no-subagents",
+    "--no-plan",
+    "--yolo",
+    "--output-format",
+    "json",
+    "--cwd",
+    str(child_home),
+    "--no-auto-update",
+]
+
+data_dir().mkdir(parents=True, exist_ok=True)
+lock.write_text("1", encoding="utf-8")
+try:
+    proc = subprocess.run(
+        args,
+        cwd=str(child_home),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=CHILD_TIMEOUT,
+    )
+except subprocess.TimeoutExpired:
+    print("restyle child timed out", file=sys.stderr)
+    allow()
+except Exception as e:
+    print(f"restyle fail-open: {e}", file=sys.stderr)
+    allow()
+finally:
+    try:
+        lock.unlink()
+    except OSError:
+        pass
+    try:
+        os.unlink(prompt_file)
+    except OSError:
+        pass
+
+if proc.returncode != 0:
+    print(f"restyle child exit {proc.returncode}", file=sys.stderr)
+    if proc.stderr:
+        print(proc.stderr, file=sys.stderr)
+    allow()
+if not proc.stdout.strip():
+    allow()
+try:
+    out = json.loads(proc.stdout)
+except Exception:
+    allow()
+text = (out.get("text") or "").strip()
+if not text:
+    allow()
+if text.startswith(VERBATIM):
+    text = text[len(VERBATIM):].strip()
+if not text:
+    allow()
+ctx = VERBATIM + "\n\n" + text
+if len(ctx) > MAX_CONTEXT:
+    ctx = ctx[:MAX_CONTEXT]
+payload = {
+    "hookSpecificOutput": {
+        "hookEventName": "Stop",
+        "additionalContext": ctx,
+    }
+}
+sys.stdout.write(json.dumps(payload, separators=(",", ":")))
+sys.exit(0)
+PY

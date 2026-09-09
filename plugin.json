@@ -1,0 +1,8 @@
+{
+  "name": "coherent-grok-for-adhd",
+  "version": "1.0.0",
+  "description": "On Stop, restyle the last assistant message in a child Grok process. Speech lives only in the child. The parent stays stock.",
+  "author": {
+    "name": "Kelvin"
+  }
+}

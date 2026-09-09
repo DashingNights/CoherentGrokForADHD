@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File \"${GROK_PLUGIN_ROOT}/scripts/stop-restyle.ps1\" || sh \"${GROK_PLUGIN_ROOT}/scripts/stop-restyle\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
