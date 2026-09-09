@@ -6,15 +6,12 @@
 # If PATH grok is a shim that injects --system-prompt-override or re-fires Stop,
 # set GROK_REAL to the unwrapped binary and keep the isolated child home.
 #
-# pwsh if present (same JSON contract as stop-restyle.ps1), else this POSIX path.
+# POSIX path (macOS/Linux). Same JSON contract as stop-restyle.ps1.
+# Windows Grok falls through to the .ps1 when sh is missing.
 
 set -eu
 
 DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-
-if command -v pwsh >/dev/null 2>&1; then
-  exec pwsh -NoProfile -ExecutionPolicy Bypass -File "$DIR/stop-restyle.ps1"
-fi
 
 allow_stop() {
   exit 0
@@ -24,13 +21,17 @@ if [ -n "${GROK_RESTYLE_CHILD:-}" ]; then
   allow_stop
 fi
 
-if ! command -v python3 >/dev/null 2>&1; then
-  echo "restyle fail-open: python3 not found (install pwsh or python3)" >&2
+if command -v python3 >/dev/null 2>&1; then
+  PY=python3
+elif command -v python >/dev/null 2>&1; then
+  PY=python
+else
+  echo "restyle fail-open: python3 not found" >&2
   allow_stop
 fi
 
 export STOP_RESTYLE_DIR="$DIR"
-exec python3 - "$DIR" <<'PY'
+exec "$PY" - "$DIR" <<'PY'
 import json, os, re, sys, tempfile, time, shutil, subprocess
 from pathlib import Path
 

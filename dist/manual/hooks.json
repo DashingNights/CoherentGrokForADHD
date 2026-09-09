@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File \"${GROK_HOME}/stop-restyle/scripts/stop-restyle.ps1\" || sh \"${GROK_HOME}/stop-restyle/scripts/stop-restyle\"",
+            "command": "sh \"${GROK_HOME}/stop-restyle/scripts/stop-restyle\" || pwsh -NoProfile -ExecutionPolicy Bypass -File \"${GROK_HOME}/stop-restyle/scripts/stop-restyle.ps1\"",
             "timeout": 60
           }
         ]

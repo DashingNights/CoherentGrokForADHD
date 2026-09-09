@@ -15,6 +15,8 @@ Plugins under `~/.grok/plugins/` are auto-trusted. Enable still required.
 
 `GROK_PLUGIN_ROOT` is how the Stop hook finds `prompt.md` and the script.
 
+One Stop entry on Windows and Unix: `sh scripts/stop-restyle` first (POSIX, needs `python3` or `python`), else `pwsh` + `scripts/stop-restyle.ps1`. PowerShell is not required on macOS or Linux.
+
 ## What it does
 
 1. Stop fires with `reason=end_turn` and a long last assistant message.
@@ -52,7 +54,7 @@ If `PATH` grok is a shim that injects `--system-prompt-override` or re-fires Sto
 
 ## Without plugin install
 
-Copy `hooks/hooks.json` into `~/.grok/hooks/`, keep `prompt.md` next to `scripts/`, and point the Stop command at `scripts/stop-restyle.ps1` (or `scripts/stop-restyle`). The script finds `prompt.md` beside the plugin root if `GROK_PLUGIN_ROOT` is unset. A zip of those files is in `dist/`.
+Copy `hooks/hooks.json` into `~/.grok/hooks/`, keep `prompt.md` next to `scripts/`. Leave the Stop command as shipped (`sh` then `pwsh`). The script finds `prompt.md` beside the plugin root if `GROK_PLUGIN_ROOT` is unset. A zip of those files is in `dist/`.
 
 ## Not included
 

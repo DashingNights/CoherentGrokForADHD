@@ -1,0 +1,3 @@
+# POSIX hook must stay LF. A CRLF shebang is `/bin/sh\r` on Unix.
+scripts/stop-restyle text eol=lf
+dist/manual/scripts/stop-restyle text eol=lf

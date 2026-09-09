@@ -5,7 +5,8 @@ Stop restyle — copy these files, no plugin install.
 
 2. Copy hooks.json to %USERPROFILE%\.grok\hooks\stop-restyle.json  (or ~/.grok/hooks/).
 
-The Stop command uses GROK_HOME/stop-restyle/scripts/….
+The Stop command runs `sh …/scripts/stop-restyle` first (POSIX, python3),
+then `pwsh …/scripts/stop-restyle.ps1` if `sh` is missing.
 
 The script finds prompt.md beside this folder if GROK_PLUGIN_ROOT is unset.
 Child binary is GROK_REAL if set, else grok on PATH.
